@@ -35,7 +35,7 @@ def findFirstRecord(infile):
 
     while True:
         data = infile.read(6553600)
-        data = data.lstrip('\x00')
+        data = data.lstrip(b'\x00')
         if data:
             return infile.tell() - len(data)
 
@@ -48,7 +48,7 @@ def findFirstRecordQuick(infile, filesize):
         if infile.tell() + 1073741824 < filesize:
             infile.seek(1073741824, 1)
             data = infile.read(6553600)
-            data = data.lstrip("\x00")
+            data = data.lstrip(b"\x00")
 
             if data:
                 infile.seek((-1073741824 + 6553600), 1)
@@ -152,11 +152,11 @@ class Usn(object):
         self.fileNameLength = struct.unpack_from("H", infile.read(2))[0]
         self.fileNameOffset = struct.unpack_from("H", infile.read(2))[0]
         filename = struct.unpack("{}s".format(self.fileNameLength), infile.read(self.fileNameLength))[0]
-        self.filename = filename.replace("\x00", "")
+        self.filename = filename.replace(b"\x00", b"").decode()
 
     def convertFileReference(self, buf):
-        byteArray = map(lambda x: '%02x' % ord(x), buf)
-            
+        byteArray = ['%02x' % x for x in bytearray(buf)]
+
         byteString = ""
         for i in byteArray[::-1]:
             byteString += i
@@ -182,7 +182,7 @@ class Usn(object):
         record["filenameoffset"] = self.fileNameOffset
         record["filename"] = self.filename
 
-        print json.dumps(record, indent=4)
+        print(json.dumps(record, indent=4))
 
     def convertTimestamp(self, timestamp):
         # The USN record's "timestamp" property is a Win32 FILETIME value
@@ -224,7 +224,7 @@ def main():
         if os.path.exists(args.file):
             journalSize = os.path.getsize(args.file)
             if args.csv:
-                print "timestamp,filename,fileattr,reason"
+                print("timestamp,filename,fileattr,reason")
         else:
             sys.exit("[ - ] File not found at the specified location")
 
@@ -249,14 +249,14 @@ def main():
                 u.prettyPrint()
 
             elif args.csv:
-                print "{},{},{},{}".format(u.timestamp, u.filename, u.fileAttributes, u.reason)
+                print("{},{},{},{}".format(u.timestamp, u.filename, u.fileAttributes, u.reason))
 
             elif args.grep:
                 if args.grep.lower() == u.filename.lower():
-                    print "{} | {} | {} | {}".format(u.timestamp, u.filename, u.fileAttributes,u.reason)
+                    print("{} | {} | {} | {}".format(u.timestamp, u.filename, u.fileAttributes,u.reason))
                     
             else:
-                print "{} | {} | {} | {}".format(u.timestamp, u.filename, u.fileAttributes, u.reason)
+                print("{} | {} | {} | {}".format(u.timestamp, u.filename, u.fileAttributes, u.reason))
 
 if __name__ == '__main__':
     main()
